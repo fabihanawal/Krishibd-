@@ -1,0 +1,9 @@
+{
+  "name": "KrishiBondhu - Smart Agriculture App",
+  "description": "A comprehensive digital platform for farmers in Bangladesh featuring AI disease diagnosis, weather updates, expert consultation, and a marketplace.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
