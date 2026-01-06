@@ -303,7 +303,7 @@ const SystemInfo = () => {
   const envVars = [
     { name: 'API_KEY (Gemini)', status: (isProcessDefined && process.env.API_KEY) ? 'Active' : 'Missing', val: 'your_gemini_key' },
     { name: 'SUPABASE_URL', status: 'Active', val: 'https://bczbvjclaxkbwgrzugoh.supabase.co' },
-    { name: 'SUPABASE_ANON_KEY', status: 'Active', val: 'sb_publishable_lb9PQ-x6mZ8TZBP6VvBe7w_xHvgHzy5' },
+    { name: 'SUPABASE_ANON_KEY', status: 'Active', val: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjemJ2amNsYXhrYndncnp1Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNjU0ODYsImV4cCI6MjA4MTc0MTQ4Nn0.7mhB7BmbUJ6gWuPzvLepgF9NquDyxDkxPnq5JQqQMeo' },
   ];
 
   return (
