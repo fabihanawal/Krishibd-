@@ -1,3 +1,4 @@
+
 export type Language = 'bn' | 'en';
 
 export interface Crop {
@@ -27,7 +28,7 @@ export interface NewsItem {
   date: string;
   image: string;
   category: 'News' | 'Loan' | 'Training';
-  videoUrl?: string; // Optional for training videos
+  videoUrl?: string;
 }
 
 export interface MarketItem {
@@ -38,6 +39,15 @@ export interface MarketItem {
   location: string;
   image: string;
   type: 'seed' | 'fertilizer' | 'crop' | 'equipment';
+}
+
+export interface AdItem {
+  id: string;
+  positionId: string; // matches AdPlaceholder id
+  type: 'adsense' | 'image';
+  content: string; // AdSense script or Image Base64
+  link?: string; // Redirect URL for image ads
+  active: boolean;
 }
 
 export interface ChatMessage {

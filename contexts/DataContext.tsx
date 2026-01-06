@@ -1,12 +1,16 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Crop, NewsItem, MarketItem, WeatherForecast } from '../types';
+import { Crop, NewsItem, MarketItem, WeatherForecast, AdItem } from '../types';
 import { MOCK_CROPS, MOCK_NEWS, MOCK_MARKET, MOCK_WEATHER } from '../constants';
+import { supabase } from '../services/supabase';
 
 interface DataContextType {
   crops: Crop[];
   news: NewsItem[];
   market: MarketItem[];
   weather: WeatherForecast[];
+  ads: AdItem[];
+  loading: boolean;
   addCrop: (crop: Crop) => void;
   updateCrop: (crop: Crop) => void;
   deleteCrop: (id: string) => void;
@@ -15,6 +19,8 @@ interface DataContextType {
   deleteNews: (id: string) => void;
   addMarketItem: (item: MarketItem) => void;
   deleteMarketItem: (id: string) => void;
+  saveAd: (ad: AdItem) => void;
+  deleteAd: (id: string) => void;
   resetData: () => void;
 }
 
@@ -29,7 +35,8 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }: { children?: ReactNode }) => {
-  // Initialize state from LocalStorage or fall back to MOCK constants
+  const [loading, setLoading] = useState(true);
+  
   const [crops, setCrops] = useState<Crop[]>(() => {
     const saved = localStorage.getItem('kb_crops');
     return saved ? JSON.parse(saved) : MOCK_CROPS;
@@ -45,47 +52,107 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     return saved ? JSON.parse(saved) : MOCK_MARKET;
   });
 
-  // Weather is static for this demo, but could be stateful too
+  const [ads, setAds] = useState<AdItem[]>(() => {
+    const saved = localStorage.getItem('kb_ads');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [weather] = useState<WeatherForecast[]>(MOCK_WEATHER);
 
-  // Persist to LocalStorage whenever state changes
   useEffect(() => localStorage.setItem('kb_crops', JSON.stringify(crops)), [crops]);
   useEffect(() => localStorage.setItem('kb_news', JSON.stringify(news)), [news]);
   useEffect(() => localStorage.setItem('kb_market', JSON.stringify(market)), [market]);
+  useEffect(() => localStorage.setItem('kb_ads', JSON.stringify(ads)), [ads]);
 
-  // --- Actions ---
+  useEffect(() => {
+    const fetchSupabaseData = async () => {
+      try {
+        const [cropsRes, newsRes, marketRes, adsRes] = await Promise.all([
+          supabase.from('crops').select('*'),
+          supabase.from('news_items').select('*'),
+          supabase.from('market_items').select('*'),
+          supabase.from('ads').select('*')
+        ]);
+        
+        if (cropsRes.data && cropsRes.data.length > 0) setCrops(cropsRes.data);
+        if (newsRes.data && newsRes.data.length > 0) setNews(newsRes.data);
+        if (marketRes.data && marketRes.data.length > 0) setMarket(marketRes.data);
+        if (adsRes.data && adsRes.data.length > 0) setAds(adsRes.data);
+        
+      } catch (e) {
+        console.warn("Supabase connectivity check: Falling back to local/cached data.", e);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const addCrop = (crop: Crop) => setCrops([...crops, crop]);
+    fetchSupabaseData();
+  }, []);
+
+  const addCrop = async (crop: Crop) => {
+    setCrops([...crops, crop]);
+    await supabase.from('crops').insert([crop]);
+  };
   
-  const updateCrop = (updatedCrop: Crop) => {
+  const updateCrop = async (updatedCrop: Crop) => {
     setCrops(crops.map(c => c.id === updatedCrop.id ? updatedCrop : c));
+    await supabase.from('crops').update(updatedCrop).eq('id', updatedCrop.id);
   };
 
-  const deleteCrop = (id: string) => {
+  const deleteCrop = async (id: string) => {
     setCrops(crops.filter(c => c.id !== id));
+    await supabase.from('crops').delete().eq('id', id);
   };
 
-  const addNews = (item: NewsItem) => setNews([...news, item]);
+  const addNews = async (item: NewsItem) => {
+    setNews([...news, item]);
+    await supabase.from('news_items').insert([item]);
+  };
 
-  const updateNews = (updatedItem: NewsItem) => {
+  const updateNews = async (updatedItem: NewsItem) => {
     setNews(news.map(n => n.id === updatedItem.id ? updatedItem : n));
+    await supabase.from('news_items').update(updatedItem).eq('id', updatedItem.id);
   };
 
-  const deleteNews = (id: string) => {
+  const deleteNews = async (id: string) => {
     setNews(news.filter(n => n.id !== id));
+    await supabase.from('news_items').delete().eq('id', id);
   };
 
-  const addMarketItem = (item: MarketItem) => setMarket([...market, item]);
+  const addMarketItem = async (item: MarketItem) => {
+    setMarket([...market, item]);
+    await supabase.from('market_items').insert([item]);
+  };
 
-  const deleteMarketItem = (id: string) => {
+  const deleteMarketItem = async (id: string) => {
     setMarket(market.filter(m => m.id !== id));
+    await supabase.from('market_items').delete().eq('id', id);
+  };
+
+  const saveAd = async (ad: AdItem) => {
+    const existing = ads.find(a => a.positionId === ad.positionId);
+    let newAds;
+    if (existing) {
+        newAds = ads.map(a => a.positionId === ad.positionId ? ad : a);
+        await supabase.from('ads').update(ad).eq('positionId', ad.positionId);
+    } else {
+        newAds = [...ads, ad];
+        await supabase.from('ads').insert([ad]);
+    }
+    setAds(newAds);
+  };
+
+  const deleteAd = async (id: string) => {
+    setAds(ads.filter(a => a.id !== id));
+    await supabase.from('ads').delete().eq('id', id);
   };
 
   const resetData = () => {
-    if(window.confirm("Are you sure? This will reset all data to default.")) {
+    if(window.confirm("আপনি কি নিশ্চিত? সব ডাটা মুছে যাবে।")) {
         setCrops(MOCK_CROPS);
         setNews(MOCK_NEWS);
         setMarket(MOCK_MARKET);
+        setAds([]);
         localStorage.clear();
         window.location.reload();
     }
@@ -93,10 +160,11 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
 
   return (
     <DataContext.Provider value={{
-      crops, news, market, weather,
+      crops, news, market, weather, ads, loading,
       addCrop, updateCrop, deleteCrop,
       addNews, updateNews, deleteNews,
       addMarketItem, deleteMarketItem,
+      saveAd, deleteAd,
       resetData
     }}>
       {children}
